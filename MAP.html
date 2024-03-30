@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Line Simplification with Leaflet and Turf</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7.1.6/turf.min.js"></script>
+    <style>
+        #map { height: 400px; }
+        
+        /* Media query for smaller screens */
+        @media screen and (max-width: 768px) {
+            #map { height: 300px; }
+        }
+
+        /* Media query for larger screens */
+        @media screen and (min-width: 1024px) {
+            #map { height: 600px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <button id="simplifyButton">Simplify</button>
+    <button id="clearButton">Clear</button>
+    <script>
+        var map = L.map('map').setView([51.0447, -114.0719], 11); // Calgary, Alberta coordinates;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+            draw: {
+                polyline: true,
+                polygon: false,
+                circle: false,
+                rectangle: false,
+                marker: false
+            },
+            edit: {
+                featureGroup: drawnItems,
+                remove: false
+            }
+        });
+        map.addControl(drawControl);
+
+        map.on(L.Draw.Event.CREATED, function (event) {
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+        });
+
+        document.getElementById('simplifyButton').addEventListener('click', function () {
+            drawnItems.eachLayer(function (layer) {
+                if (layer instanceof L.Polyline) {
+                    var originalCoords = layer.getLatLngs();
+                    var simplifiedCoords = turf.simplify(originalCoords);
+                    var simplifiedLine = L.polyline(simplifiedCoords, { color: 'red' });
+                    map.addLayer(simplifiedLine);
+                }
+            });
+        });
+
+        document.getElementById('clearButton').addEventListener('click', function () {
+            drawnItems.clearLayers();
+        });
+    </script>
+</body>
+</html>
